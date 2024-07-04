@@ -1,0 +1,4 @@
+commands:
+  daemon_cli: './tha-cli'
+logging:
+  level: 'info'
