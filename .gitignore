@@ -4,3 +4,4 @@ config.yaml
 test.json
 collect.json
 tha-cli
+go-tha-utxos
