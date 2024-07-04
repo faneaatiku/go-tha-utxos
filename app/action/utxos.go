@@ -102,9 +102,22 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 
 	//send the remaining back to the first address
 	if amountFound.IsPositive() {
+		//risky code that iterates through a map assuming there only one item in it map[address]amount
+		//replace that amount to contain 0.1 sent initially + remaining amount
 		raw := make(daemon.RawTransactionOutput, 1)
-		raw[unspent[0].Address] = amountFound.MustFloat64()
-		outputs = append(outputs, raw)
+		for address, _ := range outputs[0] {
+			//add 0.1 that was already in this output to the remaining amount
+			remainingAmountFloat := amountFound.Add(minUtxoDec).MustFloat64()
+
+			//create the RawTransactionOutput map
+			raw[address] = services.ToFixedFloat(remainingAmountFloat, 8)
+
+			//no need to continue; just needed to add remaining amount to one of the outputs
+			break
+		}
+
+		//replace first item with this map
+		outputs[0] = raw
 	}
 
 	rawTx, err := cli.CreateRawTransaction(selectedUnspent, outputs)
