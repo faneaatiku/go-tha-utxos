@@ -7,6 +7,7 @@ import (
 	"go-tha-utxos/app/dto/daemon"
 	"go-tha-utxos/config"
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -44,7 +45,7 @@ func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error)
 			return addresses, err
 		}
 
-		address := string(out)
+		address := strings.TrimSpace(string(out))
 		log.Info("generated address: ", address)
 
 		addresses = append(addresses, RemoveLineBreaks(address))
@@ -112,7 +113,7 @@ func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, 
 	}
 	out = out[:len(out)-1]
 
-	return string(out), nil
+	return strings.TrimSpace(string(out)), nil
 }
 
 func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error) {
@@ -133,7 +134,7 @@ func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error
 		return "", fmt.Errorf("command [%s] returned NOT complete transaction: %s", signRawTxCmd, string(out))
 	}
 
-	return response.Hex, nil
+	return strings.TrimSpace(response.Hex), nil
 }
 
 func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err error) {
@@ -144,5 +145,5 @@ func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err e
 		return "", fmt.Errorf("command [%s] failed when called daemon with error: %v", sendRawTxCmd, err)
 	}
 
-	return string(out), nil
+	return strings.TrimSpace(string(out)), nil
 }
