@@ -61,7 +61,7 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 
 	//extract only needed UTXOs
 	amountFound := math.ZeroDec()
-	var selectedUnspent []daemon.Unspent
+	var selectedUnspent []daemon.RawTransactionInput
 	for i := 0; i < len(unspent); i++ {
 		if amountFound.GT(amountNeeded) {
 			break
@@ -72,7 +72,10 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 			return fmt.Errorf("error on unspend amount conversion [%.2f]: %s", unspendAmount, err)
 		}
 		amountFound = amountFound.Add(unspendAmount)
-		selectedUnspent = append(selectedUnspent, unspent[i])
+		selectedUnspent = append(selectedUnspent, daemon.RawTransactionInput{
+			Txid: unspent[i].Txid,
+			Vout: unspent[i].Vout,
+		})
 	}
 
 	log.Infof("amount [%.2f] found in unspent utxos. Needed [%.2f]", amountFound, amountNeeded)
@@ -103,6 +106,29 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 		raw[unspent[0].Address] = amountFound.MustFloat64()
 		outputs = append(outputs, raw)
 	}
+
+	rawTx, err := cli.CreateRawTransaction(selectedUnspent, outputs)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on create raw transaction: %s", err))
+	}
+
+	if rawTx == "" {
+		log.Fatal(fmt.Errorf("create raw transaction returned empty string"))
+	}
+
+	signedHex, err := cli.SignRawTransaction(rawTx)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on sign raw transaction: %s", err))
+	}
+
+	txHash, err := cli.SendRawTransaction(signedHex)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on send raw transaction: %s", err))
+	}
+
+	fmt.Println("Transaction sent successfully:")
+	fmt.Println(txHash)
+	fmt.Println("Finished.")
 
 	return nil
 }

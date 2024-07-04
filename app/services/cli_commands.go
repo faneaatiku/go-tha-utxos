@@ -86,10 +86,6 @@ func (d *CliCommands) ListUnspent(count int) (unspent []daemon.Unspent, err erro
 		return unspent, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
 	}
 
-	//DO NOT COMMIT
-	//testing := `[{"txid":"f7e68572588502da54476e67564b88f3b42794c86e4181dff0339be0f38e38c5","vout":0,"address":"1FZ78z3wmdMmHxXqj2Kn67XQyo9mriVi5y","label":"","scriptPubKey":"76a9149fa431f8b7fc6b05c49f300e106cb4f92d66140788ac","amount":344.64709652,"confirmations":5,"spendable":true,"solvable":true,"desc":"pkh([cb3feb02/0h/0h/0h]0200b6748dda7b4660c96d459efe5d03b7a2925b22d56aecbeaf1457715895b06b)#j2akdk4p","parent_descs":[],"safe":true},{"txid":"f7e68572588502da54476e67564b88f3b42794c86e4181dff0339be0f38e38c5","vout":0,"address":"1FZ78z3wmdMmHxXqj2Kn67XQyo9mriVi5y","label":"","scriptPubKey":"76a9149fa431f8b7fc6b05c49f300e106cb4f92d66140788ac","amount":1344.64709652,"confirmations":5,"spendable":true,"solvable":true,"desc":"pkh([cb3feb02/0h/0h/0h]0200b6748dda7b4660c96d459efe5d03b7a2925b22d56aecbeaf1457715895b06b)#j2akdk4p","parent_descs":[],"safe":true}]`
-	//out = []byte(testing)
-
 	err = json.Unmarshal(out, &unspent)
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", listUnspentCmd, err)
@@ -98,13 +94,8 @@ func (d *CliCommands) ListUnspent(count int) (unspent []daemon.Unspent, err erro
 	return unspent, nil
 }
 
-func (d *CliCommands) CreateRawTransaction(inputs []daemon.Unspent, outputs []daemon.RawTransactionOutput) (rawTx string, err error) {
-	unspentToSend := make(map[string]float64, len(inputs))
-	for _, input := range inputs {
-		unspentToSend[input.Address] = input.Amount
-	}
-
-	inputsStr, err := json.Marshal(unspentToSend)
+func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) (rawTx string, err error) {
+	inputsStr, err := json.Marshal(inputs)
 	if err != nil {
 		return rawTx, fmt.Errorf("command [%s] failed when marshalling tx inputs: %v", createRawTxCmd, err)
 	}
@@ -114,10 +105,43 @@ func (d *CliCommands) CreateRawTransaction(inputs []daemon.Unspent, outputs []da
 		return rawTx, fmt.Errorf("command [%s] failed when marshalling tx outputs: %v", createRawTxCmd, err)
 	}
 
-	log.Debugf("calling [%s] with [%s] and [%s] as arguments", createRawTxCmd, string(inputsStr), string(outputsStr))
+	log.Debugf("calling [%s] with inputs: %s and outputs: %s", createRawTxCmd, string(inputsStr), string(outputsStr))
 	out, err := exec.Command(d.DaemonCli, createRawTxCmd, string(inputsStr), string(outputsStr)).CombinedOutput()
 	if err != nil {
-		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
+		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", createRawTxCmd, err)
+	}
+	out = out[:len(out)-1]
+
+	return string(out), nil
+}
+
+func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error) {
+
+	log.Debugf("calling [%s] with [%s] as argument", signRawTxCmd, rawTx)
+	out, err := exec.Command(d.DaemonCli, signRawTxCmd, rawTx).CombinedOutput()
+	if err != nil {
+		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", signRawTxCmd, err)
+	}
+
+	var response daemon.SignRawTransactionResponse
+	err = json.Unmarshal(out, &response)
+	if err != nil {
+		return "", fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", signRawTxCmd, err)
+	}
+
+	if !response.Complete {
+		return "", fmt.Errorf("command [%s] returned NOT complete transaction: %s", signRawTxCmd, string(out))
+	}
+
+	return response.Hex, nil
+}
+
+func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err error) {
+	log.Debugf("calling [%s] with [%s] as argument", sendRawTxCmd, hexString)
+
+	out, err := exec.Command(d.DaemonCli, sendRawTxCmd, hexString).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("command [%s] failed when called daemon with error: %v", sendRawTxCmd, err)
 	}
 
 	return string(out), nil
