@@ -33,6 +33,10 @@ func NewCliCommands(cfg *config.Config) (*CliCommands, error) {
 		return nil, fmt.Errorf("config file does not contain command.daemon_cli")
 	}
 
+	if cfg.Commands.DataDir == "" {
+		return nil, fmt.Errorf("config file does not contain command.data_dir")
+	}
+
 	return &CliCommands{DaemonCli: cli, DataDir: cfg.Commands.DataDir}, nil
 }
 
