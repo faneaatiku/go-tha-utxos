@@ -7,6 +7,7 @@ import (
 	"go-tha-utxos/app/dto/response"
 	"go-tha-utxos/app/services"
 	"go-tha-utxos/config"
+	"time"
 )
 
 func CollectAddresses(cfg *config.Config, counter int, file string, ignoreExistingFile bool) error {
@@ -78,6 +79,48 @@ func GenerateAddresses(cfg *config.Config, counter int, file string, ignoreExist
 	fileActionResponse(result, file, ignoreExistingFile)
 
 	log.Infof("successfully written addresses to [%s] file", file)
+
+	return nil
+}
+
+func ExportAddresses(cfg *config.Config, file string) error {
+	cli, err := services.NewCliCommands(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !services.FileExists(file) {
+		log.Fatal(fmt.Errorf("file [%s] doesn't exist", file))
+	}
+
+	addresses, err := getAddressesFromFile(file)
+	if err != nil {
+		return err
+	}
+
+	numOfAddresses := len(addresses)
+	if numOfAddresses == 0 {
+		return fmt.Errorf("no addresses found in file [%s]", file)
+	}
+
+	var result response.AddressesExportResponse
+	for _, addr := range addresses {
+		pk, err := cli.DumpPrivateKey(addr)
+		if err != nil {
+			return err
+		}
+
+		item := make(response.AddressesExportItem, 1)
+		item[addr] = pk
+		result = append(result, item)
+	}
+
+	log.Infof("successfully exported %d addresses", numOfAddresses)
+	now := time.Now().String()
+	exportFileName := fmt.Sprintf("export_at_%s_from_file_%s", now, file)
+	fileActionResponse(result, exportFileName, false)
+
+	log.Infof("successfully exported addresses to [%s] file", exportFileName)
 
 	return nil
 }

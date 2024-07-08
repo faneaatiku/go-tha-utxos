@@ -17,6 +17,7 @@ const (
 	createRawTxCmd          = "createrawtransaction"
 	signRawTxCmd            = "signrawtransactionwithwallet"
 	sendRawTxCmd            = "sendrawtransaction"
+	dumpPrivKeyCmd          = "dumpprivkey"
 
 	MatureConfirmations = "10"
 	MinUnspentAmount    = 0.3
@@ -57,6 +58,20 @@ func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error)
 
 		successCalls++
 	}
+
+	return
+}
+
+func (d *CliCommands) DumpPrivateKey(address string) (key string, err error) {
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), dumpPrivKeyCmd, address).CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("command [%s] failed with error: %v. output: %s", dumpPrivKeyCmd, err, string(out))
+
+		return key, err
+	}
+
+	key = strings.TrimSpace(string(out))
+	log.Infof("dumped key for address: [%s]", address)
 
 	return
 }
