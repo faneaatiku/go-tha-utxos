@@ -14,4 +14,5 @@ type Logging struct {
 
 type Commands struct {
 	DaemonCli string `yaml:"daemon_cli"`
+	DataDir   string `yaml:"data_dir"`
 }

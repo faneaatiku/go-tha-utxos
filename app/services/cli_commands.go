@@ -24,6 +24,7 @@ const (
 
 type CliCommands struct {
 	DaemonCli string
+	DataDir   string
 }
 
 func NewCliCommands(cfg *config.Config) (*CliCommands, error) {
@@ -32,13 +33,13 @@ func NewCliCommands(cfg *config.Config) (*CliCommands, error) {
 		return nil, fmt.Errorf("config file does not contain command.daemon_cli")
 	}
 
-	return &CliCommands{DaemonCli: cli}, nil
+	return &CliCommands{DaemonCli: cli, DataDir: cfg.Commands.DataDir}, nil
 }
 
 func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error) {
 	successCalls := 0
 	for i := 0; i < count; i++ {
-		out, err := exec.Command(d.DaemonCli, generateAddressesCmd).CombinedOutput()
+		out, err := exec.Command(d.DaemonCli, d.getDataDir(), generateAddressesCmd).CombinedOutput()
 		if err != nil {
 			err = fmt.Errorf("command [%s] failed with error: %v. output: %s", generateAddressesCmd, err, string(out))
 
@@ -58,7 +59,7 @@ func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error)
 
 func (d *CliCommands) GetExistingAddresses() (*daemon.ListAddressGroupingsResponse, error) {
 	var resp daemon.ListAddressGroupingsResponse
-	out, err := exec.Command(d.DaemonCli, listAddressGroupingsCmd).CombinedOutput()
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), listAddressGroupingsCmd).CombinedOutput()
 	if err != nil {
 		return &resp, fmt.Errorf("command [%s] failed with error: %v", listAddressGroupingsCmd, err)
 	}
@@ -82,7 +83,7 @@ func (d *CliCommands) ListUnspent(count int) (unspent []daemon.Unspent, err erro
 		return unspent, fmt.Errorf("command [%s] failed when marshalling request for daemon: %v", listUnspentCmd, err)
 	}
 
-	out, err := exec.Command(d.DaemonCli, listUnspentCmd, "1", "9999999", "[]", "false", string(reqAsString)).CombinedOutput()
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), listUnspentCmd, "1", "9999999", "[]", "false", string(reqAsString)).CombinedOutput()
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
 	}
@@ -107,7 +108,7 @@ func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, 
 	}
 
 	log.Debugf("calling [%s] with inputs: %s and outputs: %s", createRawTxCmd, string(inputsStr), string(outputsStr))
-	out, err := exec.Command(d.DaemonCli, createRawTxCmd, string(inputsStr), string(outputsStr)).CombinedOutput()
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), createRawTxCmd, string(inputsStr), string(outputsStr)).CombinedOutput()
 	if err != nil {
 		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", createRawTxCmd, err)
 	}
@@ -119,7 +120,7 @@ func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, 
 func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error) {
 
 	log.Debugf("calling [%s] with [%s] as argument", signRawTxCmd, rawTx)
-	out, err := exec.Command(d.DaemonCli, signRawTxCmd, rawTx).CombinedOutput()
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), signRawTxCmd, rawTx).CombinedOutput()
 	if err != nil {
 		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", signRawTxCmd, err)
 	}
@@ -140,10 +141,18 @@ func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error
 func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err error) {
 	log.Debugf("calling [%s] with [%s] as argument", sendRawTxCmd, hexString)
 
-	out, err := exec.Command(d.DaemonCli, sendRawTxCmd, hexString).CombinedOutput()
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), sendRawTxCmd, hexString).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("command [%s] failed when called daemon with error: %v", sendRawTxCmd, err)
 	}
 
 	return strings.TrimSpace(string(out)), nil
+}
+
+func (d *CliCommands) getDataDir() string {
+	if d.DataDir == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("-datadir=%s", d.DataDir)
 }
