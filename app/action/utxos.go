@@ -120,28 +120,7 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 		outputs[0] = raw
 	}
 
-	rawTx, err := cli.CreateRawTransaction(selectedUnspent, outputs)
-	if err != nil {
-		log.Fatal(fmt.Errorf("error on create raw transaction: %s", err))
-	}
-
-	if rawTx == "" {
-		log.Fatal(fmt.Errorf("create raw transaction returned empty string"))
-	}
-
-	signedHex, err := cli.SignRawTransaction(rawTx)
-	if err != nil {
-		log.Fatal(fmt.Errorf("error on sign raw transaction: %s", err))
-	}
-
-	txHash, err := cli.SendRawTransaction(signedHex)
-	if err != nil {
-		log.Fatal(fmt.Errorf("error on send raw transaction: %s", err))
-	}
-
-	fmt.Println("Transaction sent successfully:")
-	fmt.Println(txHash)
-	fmt.Println("Finished.")
+	sendTransaction(cli, selectedUnspent, outputs)
 
 	return nil
 }
@@ -167,4 +146,93 @@ func getAddressesFromFile(file string) ([]string, error) {
 	}
 
 	return data.Addresses, nil
+}
+
+func ConsolidateUtxos(cfg *config.Config, fee float64, minUtxos int) error {
+	cli, err := services.NewCliCommands(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	feeDec, err := math.NewDecFromStr(services.FloatToString(fee))
+	if err != nil {
+		return fmt.Errorf("error on fee conversion [%.2f]: %s", fee, err)
+	}
+
+	unspent, err := cli.ListUnspentDust(500)
+	if err != nil {
+		return fmt.Errorf("finding unspent utxos failed: %s", err)
+	}
+
+	numOfUnspent := len(unspent)
+	if numOfUnspent == 0 {
+		log.Infof("no usable unspent found")
+		return nil
+	}
+
+	totalUnspent := math.ZeroDec()
+	var selectedUnspent []daemon.RawTransactionInput
+	for _, u := range unspent {
+		unspendAmount, err := math.NewDecFromStr(services.FloatToString(u.Amount))
+		if err != nil {
+			return fmt.Errorf("error on unspend amount conversion [%.2f]: %s", u.Amount, err)
+		}
+
+		totalUnspent = totalUnspent.Add(unspendAmount)
+		selectedUnspent = append(selectedUnspent, daemon.RawTransactionInput{
+			Txid: u.Txid,
+			Vout: u.Vout,
+		})
+	}
+
+	remainingUnspent := totalUnspent.Sub(feeDec)
+	minUtxoDec, _ := math.NewDecFromStr("0.1")
+	//(minUtxos + number of already existing UTXOS) * 0.1
+	minAmtNeeded := math.NewDec(int64(minUtxos)).Add(math.NewDec(int64(numOfUnspent))).Mul(minUtxoDec)
+	if remainingUnspent.LT(minAmtNeeded) {
+		log.Infof("nothing to do. found %s dust and needed %s", remainingUnspent.String(), minAmtNeeded.String())
+
+		return nil
+	}
+
+	raw := make(daemon.RawTransactionOutput, 1)
+	remainingAmountFloat := remainingUnspent.MustFloat64()
+	raw[unspent[0].Address] = services.ToFixedFloat(remainingAmountFloat, 8)
+	var outputs []daemon.RawTransactionOutput
+	outputs = append(outputs, raw)
+
+	sendTransaction(cli, selectedUnspent, outputs)
+
+	return nil
+}
+
+func sendTransaction(cli *services.CliCommands, inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) {
+	if cli == nil {
+		log.Fatal("invalid cli provided")
+
+		return
+	}
+
+	rawTx, err := cli.CreateRawTransaction(inputs, outputs)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on create raw transaction: %s", err))
+	}
+
+	if rawTx == "" {
+		log.Fatal(fmt.Errorf("create raw transaction returned empty string"))
+	}
+
+	signedHex, err := cli.SignRawTransaction(rawTx)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on sign raw transaction: %s", err))
+	}
+
+	txHash, err := cli.SendRawTransaction(signedHex)
+	if err != nil {
+		log.Fatal(fmt.Errorf("error on send raw transaction: %s", err))
+	}
+
+	fmt.Println("Transaction sent successfully:")
+	fmt.Println(txHash)
+	fmt.Println("Finished.")
 }

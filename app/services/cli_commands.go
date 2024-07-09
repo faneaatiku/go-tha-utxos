@@ -21,6 +21,9 @@ const (
 
 	MatureConfirmations = "10"
 	MinUnspentAmount    = 0.3
+
+	minUnspentDustAmount = 0.10000001
+	maxUnspentDustAmount = 0.29999999
 )
 
 type CliCommands struct {
@@ -174,4 +177,30 @@ func (d *CliCommands) getDataDir() string {
 	}
 
 	return fmt.Sprintf("-datadir=%s", d.DataDir)
+}
+
+func (d *CliCommands) ListUnspentDust(count int) (unspent []daemon.Unspent, err error) {
+	maxDust := maxUnspentDustAmount
+	req := daemon.ListUnspentRequest{
+		MaximumCount:  count,
+		MinimumAmount: minUnspentDustAmount,
+		MaximumAmount: &maxDust,
+	}
+
+	reqAsString, err := json.Marshal(req)
+	if err != nil {
+		return unspent, fmt.Errorf("command [%s] failed when marshalling request for daemon: %v", listUnspentCmd, err)
+	}
+
+	out, err := exec.Command(d.DaemonCli, d.getDataDir(), listUnspentCmd, "1", "9999999", "[]", "false", string(reqAsString)).CombinedOutput()
+	if err != nil {
+		return unspent, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
+	}
+
+	err = json.Unmarshal(out, &unspent)
+	if err != nil {
+		return unspent, fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", listUnspentCmd, err)
+	}
+
+	return unspent, nil
 }

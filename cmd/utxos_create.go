@@ -9,16 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	"go-tha-utxos/app/action"
 	"go-tha-utxos/config"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
-const (
-	feeFlag   = "fee"
-	keepAlive = "keep-alive"
-)
+const ()
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -57,35 +50,19 @@ Example:
 			return fmt.Errorf("could not load config: %v", err)
 		}
 
-		keepAlive, err := cmd.Flags().GetBool(keepAlive)
-		if err != nil {
-			log.Errorf("keep alive flag could not be used: %v", err)
-			keepAlive = false
-		}
-
-		result := action.CreateUtxos(cfg, file, fee)
-		if !keepAlive {
-			return result
-		}
-
-		ticker := time.NewTicker(2 * time.Minute)
-		quit := make(chan struct{})
-		addSigtermHandler(quit)
-		for {
-			select {
-			case <-ticker.C:
-				log.Info("running create utxos")
-				err := action.CreateUtxos(cfg, file, fee)
-				if err != nil {
-					log.Errorf("create utxos flow returned error: %v", err)
-				} else {
-					log.Info("create utxos successfully finished")
-				}
-			case <-quit:
-				ticker.Stop()
-				return nil
+		delayedFunc := func() error {
+			log.Info("running create utxos")
+			err := action.CreateUtxos(cfg, file, fee)
+			if err != nil {
+				log.Errorf("create utxos flow returned error: %v", err)
+			} else {
+				log.Info("create utxos successfully finished")
 			}
+
+			return err
 		}
+
+		return runDelayed(cmd, delayedFunc)
 	},
 }
 
@@ -101,16 +78,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	createCmd.Flags().Float64(feeFlag, 0.01, "the fee to use for the transaction")
 	createCmd.Flags().String(fileFlag, "", "the file with the addresses to send UTXOs to")
-	createCmd.Flags().Bool(keepAlive, false, "if passed this flag will keep the command alive and will run the action every 2 minutes")
-}
-
-func addSigtermHandler(quitChan chan struct{}) {
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		close(quitChan)
-	}()
 }

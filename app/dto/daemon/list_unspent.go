@@ -16,6 +16,7 @@ type Unspent struct {
 }
 
 type ListUnspentRequest struct {
-	MinimumAmount float64 `json:"minimumAmount"`
-	MaximumCount  int     `json:"maximumCount"`
+	MinimumAmount float64  `json:"minimumAmount"`
+	MaximumAmount *float64 `json:"maximumAmount,omitempty"`
+	MaximumCount  int      `json:"maximumCount"`
 }
