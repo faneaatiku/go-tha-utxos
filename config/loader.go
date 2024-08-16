@@ -20,19 +20,19 @@ func LoadConfig() (*Config, error) {
 
 	yamlFile, err := os.ReadFile("config.yaml")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config.yml: %w", err)
+		return nil, fmt.Errorf("failed to read config.yaml: %w", err)
 	}
 
 	cfg := &Config{}
 	err = yaml.Unmarshal(yamlFile, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config.yml: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal config.yaml: %w", err)
 	}
 
 	if cfg.Logging.Level != "" {
 		level, err := log.ParseLevel(cfg.Logging.Level)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse logging level from config.yml: %w", err)
+			return nil, fmt.Errorf("failed to parse logging level from config.yaml: %w", err)
 		}
 
 		cfg.Logging.ParsedLevel = level

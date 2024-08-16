@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	daemon2 "go-tha-utxos/app/dto/daemon"
 	daemon "go-tha-utxos/app/dto/daemon/rpc"
 	"go-tha-utxos/config"
 	"io/ioutil"
 	"net/http"
 )
 
-type BitcoinDaemon struct {
+type RpcDaemon struct {
 	cfg    *config.RpcConnection
 	client *http.Client
 }
 
-func NewBitcoinDaemon(rpcConn *config.RpcConnection) (*BitcoinDaemon, error) {
+func NewRpcDaemon(rpcConn *config.RpcConnection) (*RpcDaemon, error) {
 	if rpcConn == nil {
 		return nil, fmt.Errorf("rpc configuration is not valid")
 	}
@@ -24,13 +25,13 @@ func NewBitcoinDaemon(rpcConn *config.RpcConnection) (*BitcoinDaemon, error) {
 		return nil, err
 	}
 
-	return &BitcoinDaemon{
+	return &RpcDaemon{
 		client: &http.Client{},
 		cfg:    rpcConn,
 	}, nil
 }
 
-func (bd *BitcoinDaemon) sendRequest(baseRequest daemon.BaseRequest) ([]byte, error) {
+func (bd *RpcDaemon) sendRequest(baseRequest daemon.BaseRequest) ([]byte, error) {
 	requestBody, err := json.Marshal(baseRequest)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func (bd *BitcoinDaemon) sendRequest(baseRequest daemon.BaseRequest) ([]byte, er
 }
 
 // GetNewAddresses generates new addresses.
-func (bd *BitcoinDaemon) GetNewAddresses(count int) ([]string, error) {
+func (bd *RpcDaemon) GetNewAddresses(count int) ([]string, error) {
 	var addresses []string
 	for i := 0; i < count; i++ {
 		result, err := bd.sendRequest(daemon.NewBaseRequest("getnewaddress", []interface{}{}))
@@ -67,13 +68,49 @@ func (bd *BitcoinDaemon) GetNewAddresses(count int) ([]string, error) {
 			return nil, err
 		}
 
-		var address string
-		if err := json.Unmarshal(result, &address); err != nil {
+		var baseResponse daemon.BaseResponse
+		if err := json.Unmarshal(result, &baseResponse); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal address: %v", err)
 		}
 
+		address := baseResponse.Result
 		addresses = append(addresses, address)
 	}
 
 	return addresses, nil
+}
+
+func (bd *RpcDaemon) DumpPrivateKey(address string) (key string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) GetExistingAddresses() (*daemon2.ListAddressGroupingsResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) ListUnspent(count int) (unspent []daemon2.Unspent, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) CreateRawTransaction(inputs []daemon2.RawTransactionInput, outputs []daemon2.RawTransactionOutput) (rawTx string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) SignRawTransaction(rawTx string) (signed string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) SendRawTransaction(hexString string) (txHash string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (bd *RpcDaemon) ListUnspentDust(count int) (unspent []daemon2.Unspent, err error) {
+	//TODO implement me
+	panic("implement me")
 }
