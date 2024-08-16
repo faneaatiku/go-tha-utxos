@@ -4,14 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"go-tha-utxos/app/dto/daemon"
 	"go-tha-utxos/app/dto/response"
 	"go-tha-utxos/app/services"
 	"go-tha-utxos/config"
 	"time"
 )
 
+type AddressesDaemon interface {
+	GetNewAddresses(count int) (addresses []string, err error)
+	DumpPrivateKey(address string) (key string, err error)
+	GetExistingAddresses() (*daemon.ListAddressGroupingsResponse, error)
+}
+
+func getAddressesDaemon(cfg *config.Config) (AddressesDaemon, error) {
+	d, err := services.NewCliDaemon(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
+
 func CollectAddresses(cfg *config.Config, counter int, file string, ignoreExistingFile bool) error {
-	cli, err := services.NewCliCommands(cfg)
+	addressesDaemon, err := getAddressesDaemon(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,7 +36,7 @@ func CollectAddresses(cfg *config.Config, counter int, file string, ignoreExisti
 		log.Fatal(fmt.Errorf("file [%s] already exists", file))
 	}
 
-	addresses, err := cli.GetExistingAddresses()
+	addresses, err := addressesDaemon.GetExistingAddresses()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +55,7 @@ func CollectAddresses(cfg *config.Config, counter int, file string, ignoreExisti
 	//counter can be 0 if he wants all existing addresses and NO new ones
 	diff := counter - countedAddresses
 	if diff > 0 {
-		newAddr, err := cli.GetNewAddresses(diff)
+		newAddr, err := addressesDaemon.GetNewAddresses(diff)
 		if err != nil {
 			log.Fatal(fmt.Errorf("error getting new addresses: %w", err))
 		}
@@ -55,7 +71,7 @@ func CollectAddresses(cfg *config.Config, counter int, file string, ignoreExisti
 }
 
 func GenerateAddresses(cfg *config.Config, counter int, file string, ignoreExistingFile bool) error {
-	cli, err := services.NewCliCommands(cfg)
+	addressesDaemon, err := getAddressesDaemon(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +81,7 @@ func GenerateAddresses(cfg *config.Config, counter int, file string, ignoreExist
 	}
 
 	var result response.GenerateAddressResponse
-	result.Addresses, err = cli.GetNewAddresses(counter)
+	result.Addresses, err = addressesDaemon.GetNewAddresses(counter)
 	if err != nil {
 		if len(result.Addresses) > 0 {
 			log.Warnf("successfully called called node command [%d] times but the process failed before it could create [%d] addresses", len(result.Addresses), counter)
@@ -84,7 +100,7 @@ func GenerateAddresses(cfg *config.Config, counter int, file string, ignoreExist
 }
 
 func ExportAddresses(cfg *config.Config, file string) error {
-	cli, err := services.NewCliCommands(cfg)
+	addressesDaemon, err := getAddressesDaemon(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +121,7 @@ func ExportAddresses(cfg *config.Config, file string) error {
 
 	var result response.AddressesExportResponse
 	for _, addr := range addresses {
-		pk, err := cli.DumpPrivateKey(addr)
+		pk, err := addressesDaemon.DumpPrivateKey(addr)
 		if err != nil {
 			return err
 		}

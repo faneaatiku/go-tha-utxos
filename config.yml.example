@@ -2,3 +2,8 @@ commands:
   daemon_cli: './tha-cli'
 logging:
   level: 'info'
+rpc:
+    host: 127.0.0.1:8441
+    user: daemon_rpc_user
+    password: daemon_rpc_password
+    wallet_name: your_wallet_name_in_the_daemon #optional - exclude it if you use only 1 loaded wallet
