@@ -18,8 +18,25 @@ const (
 	minUtxoAmount = 0.1
 )
 
+type UtxosDaemon interface {
+	ListUnspent(count int) (unspent []daemon.Unspent, err error)
+	CreateRawTransaction(inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) (rawTx string, err error)
+	SignRawTransaction(rawTx string) (signed string, err error)
+	SendRawTransaction(hexString string) (txHash string, err error)
+	ListUnspentDust(count int) (unspent []daemon.Unspent, err error)
+}
+
+func getUtxosDaemon(cfg *config.Config) (UtxosDaemon, error) {
+	d, err := services.NewRpcDaemon(&cfg.RpcConnection)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return d, nil
+}
+
 func CreateUtxos(cfg *config.Config, file string, fee float64) error {
-	cli, err := services.NewCliCommands(cfg)
+	utxosDaemon, err := getUtxosDaemon(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +53,7 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 
 	log.Infof("found [%d] addresses in file [%s]. Can try to generate [%d] UTXOs", numOfAddresses, file, numOfAddresses)
 
-	unspent, err := cli.ListUnspent(500)
+	unspent, err := utxosDaemon.ListUnspent(500)
 	if err != nil {
 		return fmt.Errorf("finding unspent addresses failed: %s", err)
 	}
@@ -120,7 +137,7 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 		outputs[0] = raw
 	}
 
-	sendTransaction(cli, selectedUnspent, outputs)
+	sendTransaction(utxosDaemon, selectedUnspent, outputs)
 
 	return nil
 }
@@ -149,7 +166,7 @@ func getAddressesFromFile(file string) ([]string, error) {
 }
 
 func ConsolidateUtxos(cfg *config.Config, fee float64, minUtxos int) error {
-	cli, err := services.NewCliCommands(cfg)
+	utxosDaemon, err := getUtxosDaemon(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,7 +176,7 @@ func ConsolidateUtxos(cfg *config.Config, fee float64, minUtxos int) error {
 		return fmt.Errorf("error on fee conversion [%.2f]: %s", fee, err)
 	}
 
-	unspent, err := cli.ListUnspentDust(500)
+	unspent, err := utxosDaemon.ListUnspentDust(500)
 	if err != nil {
 		return fmt.Errorf("finding unspent utxos failed: %s", err)
 	}
@@ -201,12 +218,12 @@ func ConsolidateUtxos(cfg *config.Config, fee float64, minUtxos int) error {
 	var outputs []daemon.RawTransactionOutput
 	outputs = append(outputs, raw)
 
-	sendTransaction(cli, selectedUnspent, outputs)
+	sendTransaction(utxosDaemon, selectedUnspent, outputs)
 
 	return nil
 }
 
-func sendTransaction(cli *services.CliCommands, inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) {
+func sendTransaction(cli UtxosDaemon, inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) {
 	if cli == nil {
 		log.Fatal("invalid cli provided")
 

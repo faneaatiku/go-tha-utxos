@@ -26,12 +26,12 @@ const (
 	maxUnspentDustAmount = 0.29999999
 )
 
-type CliCommands struct {
+type CliDaemon struct {
 	DaemonCli string
 	DataDir   string
 }
 
-func NewCliCommands(cfg *config.Config) (*CliCommands, error) {
+func NewCliDaemon(cfg *config.Config) (*CliDaemon, error) {
 	cli := cfg.Commands.DaemonCli
 	if cli == "" {
 		return nil, fmt.Errorf("config file does not contain command.daemon_cli")
@@ -41,10 +41,10 @@ func NewCliCommands(cfg *config.Config) (*CliCommands, error) {
 		return nil, fmt.Errorf("config file does not contain command.data_dir")
 	}
 
-	return &CliCommands{DaemonCli: cli, DataDir: cfg.Commands.DataDir}, nil
+	return &CliDaemon{DaemonCli: cli, DataDir: cfg.Commands.DataDir}, nil
 }
 
-func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error) {
+func (d *CliDaemon) GetNewAddresses(count int) (addresses []string, err error) {
 	successCalls := 0
 	for i := 0; i < count; i++ {
 		out, err := exec.Command(d.DaemonCli, d.getDataDir(), generateAddressesCmd).CombinedOutput()
@@ -65,7 +65,7 @@ func (d *CliCommands) GetNewAddresses(count int) (addresses []string, err error)
 	return
 }
 
-func (d *CliCommands) DumpPrivateKey(address string) (key string, err error) {
+func (d *CliDaemon) DumpPrivateKey(address string) (key string, err error) {
 	out, err := exec.Command(d.DaemonCli, d.getDataDir(), dumpPrivKeyCmd, address).CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("command [%s] failed with error: %v. output: %s", dumpPrivKeyCmd, err, string(out))
@@ -79,7 +79,7 @@ func (d *CliCommands) DumpPrivateKey(address string) (key string, err error) {
 	return
 }
 
-func (d *CliCommands) GetExistingAddresses() (*daemon.ListAddressGroupingsResponse, error) {
+func (d *CliDaemon) GetExistingAddresses() (*daemon.ListAddressGroupingsResponse, error) {
 	var resp daemon.ListAddressGroupingsResponse
 	out, err := exec.Command(d.DaemonCli, d.getDataDir(), listAddressGroupingsCmd).CombinedOutput()
 	if err != nil {
@@ -94,7 +94,7 @@ func (d *CliCommands) GetExistingAddresses() (*daemon.ListAddressGroupingsRespon
 	return &resp, nil
 }
 
-func (d *CliCommands) ListUnspent(count int) (unspent []daemon.Unspent, err error) {
+func (d *CliDaemon) ListUnspent(count int) (unspent []daemon.Unspent, err error) {
 	req := daemon.ListUnspentRequest{
 		MaximumCount:  count,
 		MinimumAmount: MinUnspentAmount,
@@ -118,7 +118,7 @@ func (d *CliCommands) ListUnspent(count int) (unspent []daemon.Unspent, err erro
 	return unspent, nil
 }
 
-func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) (rawTx string, err error) {
+func (d *CliDaemon) CreateRawTransaction(inputs []daemon.RawTransactionInput, outputs []daemon.RawTransactionOutput) (rawTx string, err error) {
 	inputsStr, err := json.Marshal(inputs)
 	if err != nil {
 		return rawTx, fmt.Errorf("command [%s] failed when marshalling tx inputs: %v", createRawTxCmd, err)
@@ -139,7 +139,7 @@ func (d *CliCommands) CreateRawTransaction(inputs []daemon.RawTransactionInput, 
 	return strings.TrimSpace(string(out)), nil
 }
 
-func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error) {
+func (d *CliDaemon) SignRawTransaction(rawTx string) (signed string, err error) {
 
 	log.Debugf("calling [%s] with [%s] as argument", signRawTxCmd, rawTx)
 	out, err := exec.Command(d.DaemonCli, d.getDataDir(), signRawTxCmd, rawTx).CombinedOutput()
@@ -160,7 +160,7 @@ func (d *CliCommands) SignRawTransaction(rawTx string) (signed string, err error
 	return strings.TrimSpace(response.Hex), nil
 }
 
-func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err error) {
+func (d *CliDaemon) SendRawTransaction(hexString string) (txHash string, err error) {
 	log.Debugf("calling [%s] with [%s] as argument", sendRawTxCmd, hexString)
 
 	out, err := exec.Command(d.DaemonCli, d.getDataDir(), sendRawTxCmd, hexString).CombinedOutput()
@@ -171,7 +171,7 @@ func (d *CliCommands) SendRawTransaction(hexString string) (txHash string, err e
 	return strings.TrimSpace(string(out)), nil
 }
 
-func (d *CliCommands) getDataDir() string {
+func (d *CliDaemon) getDataDir() string {
 	if d.DataDir == "" {
 		return ""
 	}
@@ -179,7 +179,7 @@ func (d *CliCommands) getDataDir() string {
 	return fmt.Sprintf("-datadir=%s", d.DataDir)
 }
 
-func (d *CliCommands) ListUnspentDust(count int) (unspent []daemon.Unspent, err error) {
+func (d *CliDaemon) ListUnspentDust(count int) (unspent []daemon.Unspent, err error) {
 	maxDust := maxUnspentDustAmount
 	req := daemon.ListUnspentRequest{
 		MaximumCount:  count,

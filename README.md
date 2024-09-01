@@ -1,5 +1,23 @@
 ## Usage
 
+### Auto-pilot  
+You can create UTXOs by just running this software with a simple config file:
+```yaml
+commands:
+  daemon_cli: './tha-cli'
+logging:
+  level: 'info'
+rpc:
+    host: "{{RPC_HOST:RPC_PORT}}"
+    user: "{{RPC_USER}}"
+    password: "{{RPC_PASSWORD}}"
+auto_runner:
+  addresses_file: "" #optional - if you want to use an existing file. otherwise it will create one for you with addresses fetched from the daemon
+  addresses_count: 500 #optional - how many addresses to use when creating UTXOs
+  utxos_interval: 2 #optional, interval to run the utxo create in minutes
+```
+Place this config in the same folder as the binary downloaded from this repo.
+
 Generate new addresses and optionally save them to a file
 ```
 ./go-tha-utxos addresses generate --count 50 --file addresses.json 
