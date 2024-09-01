@@ -11,7 +11,6 @@ rpc:
     host: "{{RPC_HOST:RPC_PORT}}"
     user: "{{RPC_USER}}"
     password: "{{RPC_PASSWORD}}"
-    wallet_name: "" #optional - exclude it if you use only 1 loaded wallet
 auto_runner:
   addresses_file: "" #optional - if you want to use an existing file. otherwise it will create one for you with addresses fetched from the daemon
   addresses_count: 500 #optional - how many addresses to use when creating UTXOs
