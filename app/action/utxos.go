@@ -27,7 +27,7 @@ type UtxosDaemon interface {
 }
 
 func getUtxosDaemon(cfg *config.Config) (UtxosDaemon, error) {
-	d, err := services.NewCliDaemon(cfg)
+	d, err := services.NewRpcDaemon(&cfg.RpcConnection)
 	if err != nil {
 		log.Fatal(err)
 	}

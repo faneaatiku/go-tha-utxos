@@ -18,7 +18,7 @@ type AddressesDaemon interface {
 }
 
 func getAddressesDaemon(cfg *config.Config) (AddressesDaemon, error) {
-	d, err := services.NewCliDaemon(cfg)
+	d, err := services.NewRpcDaemon(&cfg.RpcConnection)
 	if err != nil {
 		return nil, err
 	}

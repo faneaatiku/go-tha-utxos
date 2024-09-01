@@ -9,6 +9,11 @@ import (
 
 const (
 	defaultLoggingLevel = log.InfoLevel
+
+	defaultAddressesFile  = "auto.addresses.json"
+	defaultAddressesCount = 500
+	defaultUtxosInterval  = 2
+	defaultUtxosFee       = 0.001
 )
 
 var config *Config
@@ -63,4 +68,24 @@ func applyGlobalConfig(cfg *Config) {
 
 	// Only log the warning severity or above.
 	log.SetLevel(cfg.Logging.ParsedLevel)
+
+	if cfg.AutoRunner.AddressesFile == "" {
+		cfg.AutoRunner.AddressesFile = defaultAddressesFile
+	}
+
+	if cfg.AutoRunner.AddressesCount == 0 {
+		cfg.AutoRunner.AddressesCount = defaultAddressesCount
+	}
+
+	if cfg.AutoRunner.UtxosInterval <= 0 {
+		cfg.AutoRunner.UtxosInterval = defaultUtxosInterval
+	}
+
+	if cfg.AutoRunner.UtxosFee <= 0 {
+		cfg.AutoRunner.UtxosFee = defaultUtxosFee
+	}
+
+	if cfg.AutoRunner.UtxosFee > 1 {
+		log.Fatal("utxos_fee is too high! Recommended value 0.01")
+	}
 }

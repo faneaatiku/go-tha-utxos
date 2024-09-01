@@ -7,3 +7,8 @@ rpc:
     user: daemon_rpc_user
     password: daemon_rpc_password
     wallet_name: your_wallet_name_in_the_daemon #optional - exclude it if you use only 1 loaded wallet
+auto_runner:
+    addresses_file: ""
+    addresses_count: 600
+    utxos_interval: 2 #interval to run the utxo create in minutes
+    utxos_fee: 0.001
