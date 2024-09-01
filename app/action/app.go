@@ -24,29 +24,49 @@ func RunApp() error {
 
 	quit := make(chan struct{})
 	addSigtermHandler(quit)
+	l := log.WithField("action", "startup")
 
-	go runRecursive(cfg)
+	l.Info(fmt.Sprintf("will try to create new UTXOs every %d minutes", cfg.AutoRunner.UtxosInterval))
+	go runCreateUtxos(cfg)
+
+	l.Info(fmt.Sprintf("will try to consolidate UTXOs every %d minutes", cfg.AutoRunner.ConsolidateInterval))
+	go runConsolidateUtxos(cfg)
 
 	<-quit
 
 	return nil
 }
 
-func runRecursive(cfg *config.Config) {
-	log.Info(fmt.Sprintf("will try to generate UTXOs in %d minutes", cfg.AutoRunner.UtxosInterval))
+func runCreateUtxos(cfg *config.Config) {
+	l := log.WithField("action", "utxos/create")
 	time.Sleep(time.Duration(cfg.AutoRunner.UtxosInterval) * time.Minute)
 
+	l.Info("try to create new UTXOs")
 	err := CreateUtxos(cfg, cfg.AutoRunner.AddressesFile, cfg.AutoRunner.UtxosFee)
 	if err != nil {
-		log.WithError(err).Error("create utxos failed")
+		l.WithError(err).Error("create UTXOs failed")
 	}
 
-	runRecursive(cfg)
+	runCreateUtxos(cfg)
+}
+
+func runConsolidateUtxos(cfg *config.Config) {
+	l := log.WithField("action", "utxos/consolidate")
+	time.Sleep(time.Duration(cfg.AutoRunner.ConsolidateInterval) * time.Minute)
+
+	l.Info("try to consolidate UTXOs")
+	err := ConsolidateUtxos(cfg, cfg.AutoRunner.UtxosFee, cfg.AutoRunner.ConsolidateMinUtxos)
+	if err != nil {
+		l.WithError(err).Error("consolidate UTXOs failed")
+	}
+
+	runConsolidateUtxos(cfg)
 }
 
 func createNeededAddresses(cfg *config.Config) error {
 	l := log.WithField("addresses_file", cfg.AutoRunner.AddressesFile).
-		WithField("addresses_count", cfg.AutoRunner.AddressesCount)
+		WithField("addresses_count", cfg.AutoRunner.AddressesCount).
+		WithField("action", "startup")
 
 	if services.FileExists(cfg.AutoRunner.AddressesFile) {
 		l.Info("addresses file already exists")

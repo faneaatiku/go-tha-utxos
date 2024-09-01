@@ -12,3 +12,5 @@ auto_runner:
     addresses_count: 600
     utxos_interval: 2 #interval to run the utxo create in minutes
     utxos_fee: 0.001
+    consolidate_min_utxos: 50 #minimum utxos required to consolidate them
+    consolidate_interval: 1440 #interval to run consolidate

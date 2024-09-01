@@ -10,10 +10,12 @@ import (
 const (
 	defaultLoggingLevel = log.InfoLevel
 
-	defaultAddressesFile  = "auto.addresses.json"
-	defaultAddressesCount = 500
-	defaultUtxosInterval  = 2
-	defaultUtxosFee       = 0.001
+	defaultAddressesFile       = "auto.addresses.json"
+	defaultAddressesCount      = 500
+	defaultUtxosInterval       = 2
+	defaultUtxosFee            = 0.001
+	defaultConsolidateMinUtxos = 100
+	defaultConsolidateInterval = 1440 //1 day
 )
 
 var config *Config
@@ -87,5 +89,13 @@ func applyGlobalConfig(cfg *Config) {
 
 	if cfg.AutoRunner.UtxosFee > 1 {
 		log.Fatal("utxos_fee is too high! Recommended value 0.01")
+	}
+
+	if cfg.AutoRunner.ConsolidateMinUtxos <= 0 {
+		cfg.AutoRunner.UtxosFee = defaultConsolidateMinUtxos
+	}
+
+	if cfg.AutoRunner.ConsolidateInterval <= 0 {
+		cfg.AutoRunner.ConsolidateInterval = defaultConsolidateInterval
 	}
 }
