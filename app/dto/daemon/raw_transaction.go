@@ -11,3 +11,7 @@ type RawTransactionInput struct {
 	Txid string `json:"txid"`
 	Vout int    `json:"vout"`
 }
+
+type RpcSignRawTransactionResponse struct {
+	Result SignRawTransactionResponse `json:"result"`
+}

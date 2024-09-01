@@ -125,12 +125,7 @@ func (bd *RpcDaemon) ListUnspent(count int) (unspent []daemon2.Unspent, err erro
 		MinimumAmount: MinUnspentAmount,
 	}
 
-	reqAsString, err := json.Marshal(req)
-	if err != nil {
-		return unspent, fmt.Errorf("command [%s] failed when marshalling request for daemon: %v", listUnspentCmd, err)
-	}
-
-	result, err := bd.sendRequest(daemon.NewBaseRequest(listUnspentCmd, []interface{}{1, 9999999, "[]", "false", string(reqAsString)}))
+	result, err := bd.sendRequest(daemon.NewBaseRequest(listUnspentCmd, []interface{}{1, 9999999, nil, false, req}))
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
 	}
@@ -139,6 +134,10 @@ func (bd *RpcDaemon) ListUnspent(count int) (unspent []daemon2.Unspent, err erro
 	err = json.Unmarshal(result, &baseResponse)
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", listUnspentCmd, err)
+	}
+
+	if baseResponse.Error != nil {
+		return unspent, fmt.Errorf("command [%s] returned erroned response: %v", listUnspentCmd, baseResponse.Error)
 	}
 
 	return baseResponse.Result, nil
@@ -156,13 +155,18 @@ func (bd *RpcDaemon) CreateRawTransaction(inputs []daemon2.RawTransactionInput, 
 	}
 
 	log.Debugf("calling [%s] with inputs: %s and outputs: %s", createRawTxCmd, string(inputsStr), string(outputsStr))
-	out, err := bd.sendRequest(daemon.NewBaseRequest(createRawTxCmd, []interface{}{string(inputsStr), string(outputsStr)}))
+	res, err := bd.sendRequest(daemon.NewBaseRequest(createRawTxCmd, []interface{}{inputs, outputs}))
 	if err != nil {
 		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", createRawTxCmd, err)
 	}
-	out = out[:len(out)-1]
 
-	return strings.TrimSpace(string(out)), nil
+	var baseResponse daemon.BaseResponse
+	err = json.Unmarshal(res, &baseResponse)
+	if err != nil {
+		return rawTx, fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", createRawTxCmd, err)
+	}
+
+	return strings.TrimSpace(baseResponse.Result), nil
 }
 
 func (bd *RpcDaemon) SignRawTransaction(rawTx string) (signed string, err error) {
@@ -172,17 +176,17 @@ func (bd *RpcDaemon) SignRawTransaction(rawTx string) (signed string, err error)
 		return rawTx, fmt.Errorf("command [%s] failed when called daemon with error: %v", signRawTxCmd, err)
 	}
 
-	var response daemon2.SignRawTransactionResponse
+	var response daemon2.RpcSignRawTransactionResponse
 	err = json.Unmarshal(out, &response)
 	if err != nil {
 		return "", fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", signRawTxCmd, err)
 	}
 
-	if !response.Complete {
+	if !response.Result.Complete {
 		return "", fmt.Errorf("command [%s] returned NOT complete transaction: %s", signRawTxCmd, string(out))
 	}
 
-	return strings.TrimSpace(response.Hex), nil
+	return strings.TrimSpace(response.Result.Hex), nil
 }
 
 func (bd *RpcDaemon) SendRawTransaction(hexString string) (txHash string, err error) {
@@ -193,7 +197,17 @@ func (bd *RpcDaemon) SendRawTransaction(hexString string) (txHash string, err er
 		return "", fmt.Errorf("command [%s] failed when called daemon with error: %v", sendRawTxCmd, err)
 	}
 
-	return strings.TrimSpace(string(out)), nil
+	var response daemon.BaseResponse
+	err = json.Unmarshal(out, &response)
+	if err != nil {
+		return "", fmt.Errorf("command [%s] failed daemon response: %v", sendRawTxCmd, err)
+	}
+
+	if response.Error != nil {
+		return "", fmt.Errorf("command [%s] returned erroned response: %v", sendRawTxCmd, response.Error)
+	}
+
+	return strings.TrimSpace(response.Result), nil
 }
 
 func (bd *RpcDaemon) ListUnspentDust(count int) (unspent []daemon2.Unspent, err error) {
@@ -204,12 +218,7 @@ func (bd *RpcDaemon) ListUnspentDust(count int) (unspent []daemon2.Unspent, err 
 		MaximumAmount: &maxDust,
 	}
 
-	reqAsString, err := json.Marshal(req)
-	if err != nil {
-		return unspent, fmt.Errorf("command [%s] failed when marshalling request for daemon: %v", listUnspentCmd, err)
-	}
-
-	result, err := bd.sendRequest(daemon.NewBaseRequest(listUnspentCmd, []interface{}{1, 9999999, "[]", "false", string(reqAsString)}))
+	result, err := bd.sendRequest(daemon.NewBaseRequest(listUnspentCmd, []interface{}{1, 9999999, nil, false, req}))
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when called daemon with error: %v", listUnspentCmd, err)
 	}
@@ -218,6 +227,10 @@ func (bd *RpcDaemon) ListUnspentDust(count int) (unspent []daemon2.Unspent, err 
 	err = json.Unmarshal(result, &baseResponse)
 	if err != nil {
 		return unspent, fmt.Errorf("command [%s] failed when unmarshalling daemon response: %v", listUnspentCmd, err)
+	}
+
+	if baseResponse.Error != nil {
+		return unspent, fmt.Errorf("command [%s] returned erroned response: %v", listUnspentCmd, baseResponse.Error)
 	}
 
 	return baseResponse.Result, nil
