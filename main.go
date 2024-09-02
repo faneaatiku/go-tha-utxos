@@ -5,6 +5,7 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
+	"go-tha-utxos/app/action"
 	"go-tha-utxos/cmd"
 	"os"
 )
@@ -19,5 +20,15 @@ func init() {
 }
 
 func main() {
-	cmd.Execute()
+	// Explicitly check if there are no command-line arguments
+	if len(os.Args) == 1 {
+		// No arguments provided, assume double-click or direct execution
+		err := action.RunApp()
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		// Execute the root command with arguments (normal CLI behavior)
+		cmd.Execute()
+	}
 }
