@@ -8,6 +8,7 @@ import (
 	"go-tha-utxos/app/action"
 	"go-tha-utxos/cmd"
 	"os"
+	"time"
 )
 
 func init() {
@@ -25,7 +26,9 @@ func main() {
 		// No arguments provided, assume double-click or direct execution
 		err := action.RunApp()
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Error("error when trying to run app")
+			log.Errorf("this window will close in 1 minute")
+			time.Sleep(time.Minute)
 		}
 	} else {
 		// Execute the root command with arguments (normal CLI behavior)
