@@ -18,6 +18,7 @@ const (
 	signRawTxCmd            = "signrawtransactionwithwallet"
 	sendRawTxCmd            = "sendrawtransaction"
 	dumpPrivKeyCmd          = "dumpprivkey"
+	getMiningInfoCmd        = "getmininginfo"
 
 	MatureConfirmations = "10"
 	MinUnspentAmount    = 0.3

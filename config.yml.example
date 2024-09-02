@@ -14,3 +14,5 @@ auto_runner:
     utxos_fee: 0.001
     consolidate_min_utxos: 50 #minimum utxos required to consolidate them
     consolidate_interval: 1440 #interval to run consolidate
+    max_hashrate: 300000 #the max hashrate to stop at
+    extra_hashrate_address: "" #the address where the funds greater than 0.3 THA should be sent when max_hashrate is reached

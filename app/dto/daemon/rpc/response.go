@@ -97,3 +97,12 @@ type ListUnspentResponse struct {
 	Error  interface{}      `json:"error"`
 	Id     string           `json:"id"`
 }
+
+type MiningInfo struct {
+	Localhashps int `json:"localhashps"`
+}
+
+type GetMiningInfoResponse struct {
+	Result MiningInfo  `json:"result"`
+	Error  interface{} `json:"error"`
+}

@@ -235,3 +235,23 @@ func (bd *RpcDaemon) ListUnspentDust(count int) (unspent []daemon2.Unspent, err 
 
 	return baseResponse.Result, nil
 }
+
+func (bd *RpcDaemon) GetMiningInfo() (*daemon.MiningInfo, error) {
+	log.Debugf("calling [%s]", getMiningInfoCmd)
+
+	result, err := bd.sendRequest(daemon.NewBaseRequest(getMiningInfoCmd, []interface{}{}))
+	if err != nil {
+		return nil, err
+	}
+
+	var baseResponse daemon.GetMiningInfoResponse
+	if err := json.Unmarshal(result, &baseResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal mining info: %v", err)
+	}
+
+	if baseResponse.Error != nil {
+		return nil, fmt.Errorf("get mining info request failed: %v", baseResponse.Error)
+	}
+
+	return &baseResponse.Result, nil
+}

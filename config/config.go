@@ -30,12 +30,14 @@ type RpcConnection struct {
 }
 
 type AutoRunner struct {
-	AddressesFile       string  `yaml:"addresses_file"`
-	AddressesCount      int     `yaml:"addresses_count"`
-	UtxosInterval       int64   `yaml:"utxos_interval"`
-	UtxosFee            float64 `yaml:"utxos_fee"`
-	ConsolidateMinUtxos int     `yaml:"consolidate_min_utxos"`
-	ConsolidateInterval int64   `yaml:"consolidate_interval"`
+	AddressesFile        string  `yaml:"addresses_file"`
+	AddressesCount       int     `yaml:"addresses_count"`
+	UtxosInterval        int64   `yaml:"utxos_interval"`
+	UtxosFee             float64 `yaml:"utxos_fee"`
+	ConsolidateMinUtxos  int     `yaml:"consolidate_min_utxos"`
+	ConsolidateInterval  int64   `yaml:"consolidate_interval"`
+	MaxHashrate          int     `yaml:"max_hashrate"`
+	ExtraHashrateAddress string  `yaml:"extra_hashrate_address"`
 }
 
 func (c RpcConnection) Validate() error {

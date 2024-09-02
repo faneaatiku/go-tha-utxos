@@ -16,6 +16,7 @@ const (
 	defaultUtxosFee            = 0.001
 	defaultConsolidateMinUtxos = 100
 	defaultConsolidateInterval = 1440 //1 day
+	defaultMaxHashrate         = 10_000_000
 )
 
 var config *Config
@@ -97,5 +98,9 @@ func applyGlobalConfig(cfg *Config) {
 
 	if cfg.AutoRunner.ConsolidateInterval <= 0 {
 		cfg.AutoRunner.ConsolidateInterval = defaultConsolidateInterval
+	}
+
+	if cfg.AutoRunner.MaxHashrate <= 0 {
+		cfg.AutoRunner.MaxHashrate = defaultMaxHashrate
 	}
 }
