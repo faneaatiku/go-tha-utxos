@@ -88,6 +88,11 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 		if err != nil {
 			return fmt.Errorf("error on unspend amount conversion [%.2f]: %s", unspendAmount, err)
 		}
+		if !unspendAmount.IsPositive() {
+			log.Infof("unspend amount [%.2f] is not positive. Skipping it.", unspendAmount)
+			continue
+		}
+
 		amountFound = amountFound.Add(unspendAmount)
 		selectedUnspent = append(selectedUnspent, daemon.RawTransactionInput{
 			Txid: unspent[i].Txid,
