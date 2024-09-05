@@ -93,7 +93,7 @@ func applyGlobalConfig(cfg *Config) {
 	}
 
 	if cfg.AutoRunner.ConsolidateMinUtxos <= 0 {
-		cfg.AutoRunner.UtxosFee = defaultConsolidateMinUtxos
+		cfg.AutoRunner.ConsolidateMinUtxos = defaultConsolidateMinUtxos
 	}
 
 	if cfg.AutoRunner.ConsolidateInterval <= 0 {

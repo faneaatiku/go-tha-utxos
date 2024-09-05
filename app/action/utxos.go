@@ -68,7 +68,7 @@ func CreateUtxos(cfg *config.Config, file string, fee float64) error {
 	})
 
 	//amountNeeded := minUtxoAmount * float64(numOfAddresses) + fee
-	minUtxoDec, _ := math.NewDecFromStr("0.1")
+	minUtxoDec := math.MustNewDecFromStr("0.1")
 	amountNeeded := minUtxoDec.MulInt64(int64(numOfAddresses))
 	feeDec, err := math.NewDecFromStr(services.FloatToString(fee))
 	if err != nil {

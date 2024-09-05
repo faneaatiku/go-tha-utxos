@@ -63,7 +63,7 @@ func runCreateUtxos(cfg *config.Config) {
 			l.Error("can not send extra funds exceeding the max_hashrate to another address: no extra_hashrate_address provided")
 		}
 	} else {
-		l.Info("try to consolidate UTXOs")
+		l.Info("try to create UTXOs")
 		err := CreateUtxos(cfg, cfg.AutoRunner.AddressesFile, cfg.AutoRunner.UtxosFee)
 		if err != nil {
 			l.WithError(err).Error("create UTXOs failed")
